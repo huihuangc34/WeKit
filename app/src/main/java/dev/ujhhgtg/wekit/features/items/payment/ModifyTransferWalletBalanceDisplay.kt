@@ -9,6 +9,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.res.stringResource
 import dev.ujhhgtg.wekit.R
+import dev.ujhhgtg.wekit.features.api.net.ScriptPacketInterceptor
+import dev.ujhhgtg.wekit.loader.abc.ScriptHookRegistry
 import dev.ujhhgtg.wekit.features.api.net.WePacketManager
 import dev.ujhhgtg.wekit.features.api.net.WeProtoData
 import dev.ujhhgtg.wekit.features.api.net.abc.IWePacketInterceptor
@@ -37,8 +39,9 @@ object ModifyTransferWalletBalanceDisplay : ClickableFeature(), IWePacketInterce
     private const val KEY_LQT_BALANCE = "fake_lqt_balance"
 
     override fun onEnable() {
-        WePacketManager.addInterceptor(this)
-    }
+    WePacketManager.addInterceptor(this)
+    WePacketManager.addInterceptor(ScriptPacketInterceptor)
+}
 
     override fun onResponse(uri: String, cgiId: Int, respBytes: ByteArray): ByteArray? {
         if (cgiId != 2882) return null
@@ -136,8 +139,10 @@ object ModifyTransferWalletBalanceDisplay : ClickableFeature(), IWePacketInterce
     }
 
     override fun onDisable() {
-        WePacketManager.removeInterceptor(this)
-    }
+    WePacketManager.removeInterceptor(this)
+    WePacketManager.removeInterceptor(ScriptPacketInterceptor)
+    ScriptHookRegistry.clear()
+}
 
     override fun onClick(context: ComponentActivity) {
         showComposeDialog(context) {
