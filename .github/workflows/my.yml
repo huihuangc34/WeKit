@@ -27,13 +27,17 @@ jobs:
           targets: aarch64-linux-android
 
       - name: Install Android NDK
+        id: ndk
         run: |
           NDK_VERSION=$(sed -n 's/^ndk = "\(.*\)"/\1/p' gradle/libs.versions.toml)
           MIN_SDK=$(sed -n 's/^minSdk = "\(.*\)"/\1/p' gradle/libs.versions.toml)
-          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses
-          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "ndk;$NDK_VERSION"
+          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses >/dev/null
+          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "ndk;$NDK_VERSION" >/dev/null
           NDK_BIN="$ANDROID_HOME/ndk/$NDK_VERSION/toolchains/llvm/prebuilt/linux-x86_64/bin"
           test -x "$NDK_BIN/aarch64-linux-android$MIN_SDK-clang"
+          echo "NDK_BIN=$NDK_BIN" >> "$GITHUB_ENV"
+          echo "MIN_SDK=$MIN_SDK" >> "$GITHUB_ENV"
+          echo "$NDK_BIN" >> "$GITHUB_PATH"
 
       - name: Rust cache
         uses: Swatinem/rust-cache@v2
@@ -48,6 +52,11 @@ jobs:
         run: cargo xtask configure
 
       - name: Build native
+        env:
+          CC_aarch64_linux_android: ${{ env.NDK_BIN }}/aarch64-linux-android${{ env.MIN_SDK }}-clang
+          CXX_aarch64_linux_android: ${{ env.NDK_BIN }}/aarch64-linux-android${{ env.MIN_SDK }}-clang++
+          AR_aarch64_linux_android: ${{ env.NDK_BIN }}/llvm-ar
+          CARGO_TARGET_AARCH64_LINUX_ANDROID_LINKER: ${{ env.NDK_BIN }}/aarch64-linux-android${{ env.MIN_SDK }}-clang
         run: cargo xtask build --native-only --abi arm64-v8a
 
       - name: Build APK
